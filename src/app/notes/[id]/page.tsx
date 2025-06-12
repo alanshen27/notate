@@ -57,6 +57,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
   const [inputMessage, setInputMessage] = useState('');
   const [isAiResponding, setIsAiResponding] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [changedContent, setChangedContent] = useState<number>(0);
 
   useEffect(() => {
     fetchNote();
@@ -433,6 +434,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
         content: updatedNote.summary,
       });
       setSelectedMediaIds([]);
+      setChangedContent(prev => prev + 1);
       toast.success("Added to summary successfully");
     } catch (error) {
       console.error("Error adding to summary:", error);
@@ -623,7 +625,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
           {/* Editor */}
           <div className="w-full relative">
             <Editor
-              key={note.content}
+              key={changedContent}
               initialContent={note.content}
               onChange={(content) => updateNote({ content })}
               readOnly={isAddingToSummary}

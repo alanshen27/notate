@@ -26,18 +26,7 @@ export async function GET(
     });
 
     if (!note) {
-      // Create a new note if not found
-      note = await prisma.note.create({
-        data: {
-          id: (await params).id,
-          title: "Untitled Note",
-          content: "",
-          userId: session.user.id,
-        },
-        include: {
-          media: true,
-        },
-      });
+      return new NextResponse("Note not found", { status: 404 });
     }
 
     return NextResponse.json(note);
