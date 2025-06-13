@@ -13,7 +13,7 @@ export async function GET(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    let note = await prisma.note.findUnique({
+    const note = await prisma.note.findUnique({
       where: {
         id: (await params).id,
         user: {
