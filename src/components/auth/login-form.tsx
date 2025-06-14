@@ -109,7 +109,7 @@ export function LoginForm() {
         variant="outline"
         type="button"
         disabled={isLoading}
-        onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+        onClick={() => signIn("google", { callbackUrl: "/notes/" })}
       >
         {isLoading ? (
           <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
