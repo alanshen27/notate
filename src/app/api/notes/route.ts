@@ -7,7 +7,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const notes = await prisma.note.findMany({
@@ -22,7 +22,7 @@ export async function GET() {
     return NextResponse.json(notes);
   } catch (error) {
     console.error("[NOTES_GET]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
   }
 }
 
@@ -30,14 +30,14 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
     const { title, content, folderId } = body;
 
     if (!title) {
-      return new NextResponse("Title is required", { status: 400 });
+      return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
     const note = await prisma.note.create({
@@ -49,17 +49,17 @@ export async function POST(req: Request) {
             id: session.user.id,
           },
         },
-        folder: {
+        folder: folderId ? {
           connect: {
             id: folderId,
           },
-        },
+        } : undefined,
       },
     });
 
     return NextResponse.json(note);
   } catch (error) {
     console.error("[NOTES_POST]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
   }
 } 

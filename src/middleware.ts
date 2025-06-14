@@ -17,7 +17,13 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token,
+      authorized: ({ token, req }) => {
+        // Allow access to auth-related API routes
+        if (req.nextUrl.pathname.startsWith("/api/auth")) {
+          return true;
+        }
+        return !!token;
+      },
     },
     pages: {
       signIn: "/login",
@@ -32,6 +38,6 @@ export const config = {
     "/api/:path*",
     "/login",
     "/register",
-    // "/((?!api/auth|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api/auth|_next/static|_next/image|favicon.ico).*)",
   ],
 }; 

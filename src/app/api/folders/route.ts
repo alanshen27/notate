@@ -7,7 +7,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if default folder exists
@@ -76,7 +76,7 @@ export async function GET() {
     return NextResponse.json(folders);
   } catch (error) {
     console.error("[FOLDERS_GET] Error:", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
   }
 }
 
@@ -84,14 +84,14 @@ export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
     const { name, parentId } = body;
 
     if (!name) {
-      return new NextResponse("Name is required", { status: 400 });
+      return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
     // First check if this is a child folder
@@ -105,12 +105,12 @@ export async function POST(req: Request) {
       });
 
       if (!parentFolder || parentFolder.userId !== session.user.id) {
-        return new NextResponse("Parent folder not found or unauthorized", { status: 404 });
+        return NextResponse.json({ error: "Parent folder not found or unauthorized" }, { status: 404 });
       }
 
       // Check if parent folder is already a child (depth = 2)
       if (parentFolder.parentId) {
-        return new NextResponse("Cannot create folder deeper than two levels", { status: 400 });
+        return NextResponse.json({ error: "Cannot create folder deeper than two levels" }, { status: 400 });
       }
     }
 
@@ -155,6 +155,6 @@ export async function POST(req: Request) {
     return NextResponse.json(folder);
   } catch (error) {
     console.error("[FOLDERS_POST]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
   }
 } 

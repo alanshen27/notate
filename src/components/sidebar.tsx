@@ -300,13 +300,16 @@ export function Sidebar() {
   const fetchFolders = async () => {
     try {
       const response = await fetch("/api/folders");
-      if (!response.ok) throw new Error("Failed to fetch folders");
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to fetch folders");
+      }
       const data = await response.json();
       setSelectedFolder(data.find((folder: Folder) => folder.isDefault)?.id || null);
       setFolders(data.find((folder: Folder) => folder.isDefault));
     } catch (error) {
       console.error("Error fetching folders:", error);
-      toast.error("Failed to load folders");
+      toast.error(error instanceof Error ? error.message : "Failed to load folders");
     } finally {
       setIsLoading(false);
     }
@@ -326,7 +329,11 @@ export function Sidebar() {
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to create note");
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create note");
+      }
+      
       const newNote = await response.json();
       
       setFolders(prevFolders => {
@@ -342,7 +349,7 @@ export function Sidebar() {
       router.push(`/notes/${newNote.id}`);
     } catch (error) {
       console.error("Error creating note:", error);
-      toast.error("Failed to create note");
+      toast.error(error instanceof Error ? error.message : "Failed to create note");
     }
   };
 
