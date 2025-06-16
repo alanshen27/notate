@@ -94,7 +94,7 @@ export function Navbar() {
         <div className="flex justify-between items-center h-16">
           <div className="flex-shrink-0">
             <Link href="/" className="text-xl font-bold text-gray-900 flex flex-row items-center gap-2">
-              <Image src="/logo-ico.png" alt="notate" width={24} height={24} />
+              <Image src="/logo.png" alt="notate" width={24} height={24} />
               <span>notate<span className="text-primary">.sh</span></span>
             </Link>
           </div>
