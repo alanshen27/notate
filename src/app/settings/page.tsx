@@ -47,7 +47,7 @@ export default function SettingsPage() {
   };
 
   const handlePurchase = async (amount: number) => {
-    return alert('Coming soon if interest is sufficient.');
+    // return alert('Coming soon if interest is sufficient.');
 
     setIsLoading(true);
     try {

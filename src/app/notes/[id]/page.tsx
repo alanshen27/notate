@@ -12,13 +12,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Upload, Mic, Video, MoreVertical, Trash2, MessageSquare, X } from "lucide-react";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { Plus, Upload, Mic, Video, MoreVertical, Trash2, MessageSquare, X, Loader2, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
 import { Section } from "@/lib/types";
 import { toast } from "sonner";
 import debounce from "lodash/debounce";
 import { cn } from "@/lib/utils";
 import { v4 } from "uuid";
 import { useRef } from "react";
+import { Badge } from "@/components/ui/badge";
 
 interface MediaFile {
   id: string;
@@ -36,6 +43,7 @@ interface Note {
   title: string;
   content: string;
   media: MediaFile[];
+  recallSetId: string;
 }
 
 export default function NotePage({ params }: { params: Promise<{ id: string }> }) {
@@ -58,10 +66,20 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
   const [isAiResponding, setIsAiResponding] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [changedContent, setChangedContent] = useState<number>(0);
+  const [isGeneratingFlashcards, setIsGeneratingFlashcards] = useState(false);
+  const [flashcards, setFlashcards] = useState<{ term: string; definition: string }[]>([]);
+  const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
+  const [activeTab, setActiveTab] = useState("media");
 
   useEffect(() => {
     fetchNote();
   }, [id]);
+
+  useEffect(() => {
+    if (note?.recallSetId) {
+      fetchRecallSet();
+    }
+  }, [note?.recallSetId]);
 
   // Fetch messages when chat is opened
   useEffect(() => {
@@ -104,6 +122,13 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
       console.error('Error fetching messages:', error);
       toast.error('Failed to load messages');
     }
+  };
+
+  const fetchRecallSet = async () => {
+    const response = await fetch(`https://www.recalls.sh/api/sets/${note?.recallSetId}`);
+    if (!response.ok) throw new Error('Failed to fetch recall set');
+    const data = await response.json();
+    setFlashcards(data.flashcards);
   };
 
   const debouncedSave = useCallback(
@@ -485,6 +510,56 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
     </div>
   );
 
+  const handleGenerateFlashcards = async () => {
+    setIsGeneratingFlashcards(true);
+    try {
+      const response = await fetch(`https://www.recalls.sh/api/sets/inference`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          notes: note?.content || 'No notes',
+          title: note?.title || 'No title',
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate flashcards");
+      const data = await response.json();
+
+      const recallSetResponse = await fetch(`/api/notes/${id}/connectToRecalls`, {
+        method: "POST",
+        credentials: 'include',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ setId: data.id }),
+      });
+
+      if (!recallSetResponse.ok) throw new Error("Failed to connect to Recalls");
+
+      setFlashcards(data.flashcards);
+      toast.success("Flashcards generated successfully");
+    } catch (error) {
+      console.error("Error generating flashcards:", error);
+      toast.error("Failed to generate flashcards");
+    } finally {
+      setIsGeneratingFlashcards(false);
+    }
+  };
+
+  const toggleCard = (index: number) => {
+    setFlippedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  };
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-full">Loading...</div>;
   }
@@ -494,10 +569,10 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
   }
 
   return (
-    <main className="bg-background">
+    <main className="bg-background w-full">
       {/* Top Bar */}
       <div className="border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="w-full px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Input
               value={note.title}
@@ -528,97 +603,174 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
               <MessageSquare className="h-4 w-4 mr-2" />
               Chat
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Media
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => setShowUploadModal(true)}>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload File
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowRecordModal(true)}>
-                  <Mic className="h-4 w-4 mr-2" />
-                  Record Audio
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {activeTab === "media" ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Media
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => setShowUploadModal(true)}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload File
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowRecordModal(true)}>
+                    <Mic className="h-4 w-4 mr-2" />
+                    Record Audio
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => handleGenerateFlashcards()}
+                disabled={isGeneratingFlashcards}
+              >
+                {isGeneratingFlashcards ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Generate Flashcards
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="container px-8 py-5">
-        {/* Media Gallery */}
-        {note.media.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold mb-4">Media Files</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-              {note.media.map((file) => (
-                <div
-                  key={file.id}
-                  className={cn(
-                    "bg-white border rounded-lg p-3 hover:bg-gray-50 transition-colors relative group cursor-pointer",
-                    selectedMediaIds.includes(file.id) && "ring-2 ring-primary",
-                    file.processing && "animate-pulse bg-primary/10 pointer-events-none"
-                  )}
-                  onClick={() => {
-                    if (!file.processing) {
-                      handleMediaSelect(file.id);
-                    }
-                  }}
-                >
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteMedia(file.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                  <div className="aspect-video bg-muted rounded-md mb-2 flex items-center justify-center">
-                    {file.type === 'audio' ? (
-                      <Mic className="h-6 w-6 text-muted-foreground" />
-                    ) : (
-                      <Video className="h-6 w-6 text-muted-foreground" />
+      <div className="w-full px-8 py-5">
+        {/* Tabs for Media and Flashcards */}
+        <Tabs defaultValue="media" className="mb-8" onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="media">Media Files</TabsTrigger>
+            <TabsTrigger value="flashcards">Study Materials <Badge className="text-xs">Beta</Badge></TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="media">
+            {note.media.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                {note.media.map((file) => (
+                  <div
+                    key={file.id}
+                    className={cn(
+                      "bg-white border rounded-lg p-3 hover:bg-gray-50 transition-colors relative group cursor-pointer",
+                      selectedMediaIds.includes(file.id) && "ring-2 ring-primary",
+                      file.processing && "animate-pulse bg-primary/10 pointer-events-none"
                     )}
+                    onClick={() => {
+                      if (!file.processing) {
+                        handleMediaSelect(file.id);
+                      }
+                    }}
+                  >
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteMedia(file.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <div className="aspect-video bg-muted rounded-md mb-2 flex items-center justify-center">
+                      {file.type === 'audio' ? (
+                        <Mic className="h-6 w-6 text-muted-foreground" />
+                      ) : (
+                        <Video className="h-6 w-6 text-muted-foreground" />
+                      )}
+                    </div>
+                    <p className="text-sm font-medium truncate">{file.name}</p>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {file.type === 'audio' ? 'Audio' : 'Video'}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewTranscript(file);
+                      }}
+                    >
+                      View Transcript
+                    </Button>
                   </div>
-                  <p className="text-sm font-medium truncate">{file.name}</p>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    {file.type === 'audio' ? 'Audio' : 'Video'}
-                  </p>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="flashcards">
+            {/* Flashcards Row */}
+            {flashcards.length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-md font-medium">Flashcards</h3>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViewTranscript(file);
-                    }}
+                    onClick={() => window.open(`https://www.recalls.sh/sets/${note?.recallSetId}`, '_blank')}
                   >
-                    View Transcript
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Open in Recalls
                   </Button>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+                
+                <div className="relative">
+                  <div className="flex gap-4 overflow-x-auto pb-4 px-1 snap-x snap-mandatory">
+                    {flashcards.map((flashcard, index) => (
+                      <div
+                        key={index}
+                        className="flex-none w-64 snap-center"
+                      >
+                        <div 
+                          className="relative w-full aspect-[4/3] cursor-pointer perspective-1000"
+                          onClick={() => toggleCard(index)}
+                        >
+                          <div 
+                            className={`absolute w-full h-full transition-transform duration-500 transform-style-3d ${
+                              flippedCards.has(index) ? 'rotate-y-180' : ''
+                            }`}
+                          >
+                            {/* Front of card */}
+                            <div className="absolute w-full h-full backface-hidden bg-white border rounded-lg p-4 flex flex-col items-center justify-center shadow-sm hover:shadow-md transition-shadow">
+                              <p className="font-semibold text-center">{flashcard.term}</p>
+                            </div>
+                            
+                            {/* Back of card */}
+                            <div className="absolute w-full h-full backface-hidden bg-white border rounded-lg p-4 flex flex-col items-center justify-center rotate-y-180 shadow-sm hover:shadow-md transition-shadow">
+                              <p className="text-center overflow-scroll m-2">{flashcard.definition}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
 
         {/* Editor and Sidebars Layout */}
         <div className="flex flex-col lg:flex-row gap-8 w-full">

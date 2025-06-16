@@ -17,6 +17,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 interface Note {
   id: string;
@@ -92,8 +93,9 @@ export function Navbar() {
       <div className="px-4">
         <div className="flex justify-between items-center h-16">
           <div className="flex-shrink-0">
-            <Link href="/" className="text-xl font-bold text-gray-900">
-              &#47;&#47; notate<span className="text-primary">.sh</span>
+            <Link href="/" className="text-xl font-bold text-gray-900 flex flex-row items-center gap-2">
+              <Image src="/logo-ico.png" alt="notate" width={24} height={24} />
+              <span>notate<span className="text-primary">.sh</span></span>
             </Link>
           </div>
 

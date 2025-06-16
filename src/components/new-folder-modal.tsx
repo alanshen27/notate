@@ -27,9 +27,10 @@ export function NewFolderModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+
     if (!name.trim()) return;
 
-    setIsLoading(true);
     try {
       const response = await fetch("/api/folders", {
         method: "POST",

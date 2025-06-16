@@ -94,20 +94,20 @@ export async function POST(
       messages: [
         {
           role: "system",
-          content: "You are a helpful assistant that creates concise, well-structured summaries. Combine the given media transcripts and summaries into a single coherent summary. Focus on the key points and maintain a clear narrative flow. Make sure to not miss out anything, and make this look like notes that a student would take."
+          content: "You are a helpful assistant that converts multiple media sources and rough notes into a single student-style cram sheet. You organize, summarize, and format the material clearly, with high information density and logical flow."
         },
         {
-            role: "system",
-            content: "Do so in a structured manner with headers, subheaders, links, etc. If it is a slideshow, describe each slide. Return in HTML format."
+          role: "system",
+          content: "Return output in clean, semantically structured HTML using <h1>, <h2>, <ul>, <li>, <code>, and <p>. Use bullet points for facts and definitions. Include equations, statistics, and examples wherever they appear. If content includes slides, summarize each slide clearly."
         },
         {
-            role: "system",
-            content: "Include only the summary please in HTML markup. Do not include any other text.",
+          role: "system",
+          content: "Focus on student needs: concepts, formulas, key examples, diagrams (describe in text), and all numerical/statistical data. Make it comprehensive and efficient to revise from. Do not omit any useful content. Do not include metadata or framing text."
         },
         {
           role: "user",
-          content: `Please create a comprehensive summary of the following media content:\n\n${mediaContent}\n\nNote's existing content:\n${note.content}`
-        }
+          content: `Please create a comprehensive cram sheet from the following media and notes:\n\n${mediaContent}\n\nStudent's notes:\n${note.content} Try to concatenate to the users notes, and only change if it would make it more helpful.`
+        }    
       ],
       temperature: 0.7,
       max_tokens: 1000,

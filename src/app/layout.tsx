@@ -9,8 +9,9 @@ import { Navbar } from "@/components/Navbar";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Notate",
-  description: "Your personal note-taking app",
+  title: "notate.sh",
+  description: "Your personal AI-powered note-taking and revision app",
+  icons: "/logo-ico.png",
 };
 
 export default async function RootLayout({

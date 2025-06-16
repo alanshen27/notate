@@ -287,7 +287,6 @@ export function Sidebar() {
   const { id } = useParams();
 
   const [folders, setFolders] = useState<Folder | null>(null);
-  const [selectedNote, setSelectedNote] = useState<string | null>(id as string);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
@@ -430,7 +429,7 @@ export function Sidebar() {
   }
 
   return (
-    <div className="w-64 border-r bg-background h-full">
+    <div className="border-r bg-background h-full">
       <div className="p-4 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Notes</h2>
@@ -460,7 +459,7 @@ export function Sidebar() {
                 key={folder.id}
                 folder={folder}
                 level={0}
-                isSelected={selectedFolder || ""}
+                isSelected={id as string}
                 onSelect={setSelectedFolder}
                 onDelete={handleDeleteFolder}
                 onRename={handleRenameFolder}
@@ -472,8 +471,10 @@ export function Sidebar() {
                 key={note.id}
                 note={note}
                 level={0}
-                isSelected={selectedNote || ""}
-                onSelect={setSelectedNote}
+                isSelected={id as string}
+                onSelect={() => {
+                  router.push(`/notes/${note.id}`);
+                }}
                 onDelete={handleDeleteNote}
                 onRename={handleRenameNote}
               />

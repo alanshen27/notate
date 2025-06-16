@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -25,9 +25,11 @@ export function NewNoteModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
-
+    
+    if (isLoading || !title.trim()) return;
+    
     setIsLoading(true);
+
     try {
       onNoteCreated(title);
     } catch (error) {
