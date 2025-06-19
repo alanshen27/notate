@@ -648,7 +648,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
       {/* Main Content */}
       <div className="w-full px-8 py-5">
         {/* Tabs for Media and Flashcards */}
-        <Tabs defaultValue="media" className="mb-8" onValueChange={setActiveTab}>
+        <Tabs defaultValue="media" className="mb-5" onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="media">Media Files</TabsTrigger>
             <TabsTrigger value="flashcards">Study Materials <Badge className="text-xs">Beta</Badge></TabsTrigger>
@@ -718,6 +718,11 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                 ))}
               </div>
             )}
+            {note.media.length === 0 && (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground text-sm">No media files added yet</p>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="flashcards">
@@ -767,6 +772,11 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                     ))}
                   </div>
                 </div>
+              </div>
+            )}
+            {flashcards.length === 0 && (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground text-sm">No flashcards generated yet</p>
               </div>
             )}
           </TabsContent>
