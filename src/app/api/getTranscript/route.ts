@@ -9,6 +9,7 @@ import sanitizeHtml from 'sanitize-html';
 import { Section } from '@/lib/types';
 import { prisma } from '@/lib/prisma';
 import OpenAI from 'openai';
+import pusher from '@/lib/pusher';
 
 const client = new OpenAI({
     baseURL: "https://api.cohere.ai/compatibility/v1",
@@ -24,26 +25,35 @@ const SanitizeConfig = {
 }
 
 export async function POST(request: NextRequest) {
+  const requestData = await request.json();
+  const mediaId = requestData.mediaId;
+
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const mediaId = formData.get('mediaId') as string;
 
-    if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
-    }
+    const media = await prisma.media.findUnique({
+      where: {
+        id: mediaId,
+      },
+    });
 
-    if (!mediaId) {
+    if (!media) {
+      await prisma.media.delete({
+        where: {
+          id: mediaId,
+        },
+      });
       return NextResponse.json({ error: 'No media ID provided' }, { status: 400 });
     }
 
-    let text: string | Section[];
-    
-    const arrayBuffer = await file.arrayBuffer();
+    const file = media.url;
 
-    switch (file.type) {
+    const arrayBuffer = await fetch(file).then(res => res.arrayBuffer());
+
+    let text: string | Section[];
+
+    switch (media.type) {
       case 'text/plain':
-        text = await file.text();
+        text = await fetch(file).then(res => res.text());
         break;
 
       case 'application/pdf': {
@@ -74,6 +84,11 @@ export async function POST(request: NextRequest) {
       }
 
       default:
+        await prisma.media.delete({
+          where: {
+            id: mediaId,
+          },
+        });
         return NextResponse.json({ error: 'Unsupported file type' }, { status: 400 });
     }
 
@@ -123,12 +138,22 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    pusher.trigger(`note_${media.noteId}`, 'transcript_ready', updatedMedia);
+
     return NextResponse.json({ 
       transcript: text, 
       summary: summary,
       media: updatedMedia 
     });
+
+
   } catch (error) {
+    const deletedMedia = await prisma.media.delete({
+      where: {
+        id: mediaId,
+      },
+    });
+
     console.error('Error processing file:', error);
     return NextResponse.json({ error: 'Failed to process file' }, { status: 500 });
   }

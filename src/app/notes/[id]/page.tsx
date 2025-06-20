@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { v4 } from "uuid";
 import { useRef } from "react";
 import { Badge } from "@/components/ui/badge";
+import { pusher } from "@/lib/client/pusher";
 
 interface MediaFile {
   id: string;
@@ -70,6 +71,18 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
   const [flashcards, setFlashcards] = useState<{ term: string; definition: string }[]>([]);
   const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
   const [activeTab, setActiveTab] = useState("media");
+
+  useEffect(() => {
+    const channel = pusher.subscribe(`note_${id}`);
+    channel.bind('transcript_ready', (data: MediaFile) => {
+      setNote((prevNote) => ({
+        ...prevNote!,
+        media: prevNote!.media.map((m) =>
+          m.id === data.id ? data : m
+        ),
+      }));
+    });
+  }, [id]);
 
   useEffect(() => {
     fetchNote();
@@ -211,47 +224,33 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
           { ...newMedia, processing: true }
         ]
       });
-      
-      // Now get the transcript
-      const transcriptFormData = new FormData();
-      transcriptFormData.append("file", file);
-      transcriptFormData.append("mediaId", newMedia.id);
 
-      const transcriptResponse = await fetch('/api/getTranscript', {
-        method: 'POST',
-        body: transcriptFormData,
-      });
-
-      if (!transcriptResponse.ok) throw new Error("Failed to get transcript");
-      const transcriptData = await transcriptResponse.json();
-
-      // Update the note again with the transcript
-      if (note?.media.find(media => media.id === newMedia.id)) 
-      setNote({
-        ...note!,
-        media: note!.media.map(media => 
-          media.id === newMedia.id 
-            ? { 
-                ...media, 
-                transcript: transcriptData.transcript || '', 
-                summary: transcriptData.summary || '',
-                processing: false 
-              } 
-            : media
-        ),
-      })
-      else setNote({
-        ...note!,
-        media: [
-          ...note!.media,
-          {
-            ...newMedia,
-            transcript: transcriptData.transcript || '',
-            summary: transcriptData.summary || '',
-            processing: false,
-          }
-        ]
-      })
+      // if (note?.media.find(media => media.id === newMedia.id)) 
+      // setNote({
+      //   ...note!,
+      //   media: note!.media.map(media => 
+      //     media.id === newMedia.id 
+      //       ? { 
+      //           ...media, 
+      //           transcript: transcriptData.transcript || '', 
+      //           summary: transcriptData.summary || '',
+      //           processing: false 
+      //         } 
+      //       : media
+      //   ),
+      // })
+      // else setNote({
+      //   ...note!,
+      //   media: [
+      //     ...note!.media,
+      //     {
+      //       ...newMedia,
+      //       transcript: transcriptData.transcript || '',
+      //       summary: transcriptData.summary || '',
+      //       processing: false,
+      //     }
+      //   ]
+      // })
       toast.success("File uploaded successfully");
     } catch (error) {
       console.error("Error uploading file:", error);

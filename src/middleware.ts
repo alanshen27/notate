@@ -29,6 +29,9 @@ export default withAuth(
         if (req.nextUrl.pathname.startsWith("/api/auth")) {
           return true;
         }
+        if (req.nextUrl.pathname.startsWith("/api/getTranscript")) {
+          return true;
+        }
         return !!token;
       },
     },
@@ -45,6 +48,6 @@ export const config = {
     "/api/:path*",
     "/login",
     "/register",
-    "/((?!api/auth|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api/auth|_next/static|_next/image|favicon.ico|api/getTranscript).*)",
   ],
 }; 

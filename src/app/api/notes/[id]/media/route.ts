@@ -5,7 +5,10 @@ import { Storage } from "@google-cloud/storage";
 import { v4 as uuidv4 } from "uuid";
 import { prisma } from "@/lib/prisma";
 
-// Initialize the Google Cloud Storage client
+
+// @consider: if media upload fails -> nothing happens. however, if media creation in db fails, there is media in db without a listing in db
+
+// @todo: move Gcloud init to a seperate file
 let storage: Storage;
 try {
   const credentials = process.env.GOOGLE_CLOUD_CREDENTIALS;
@@ -77,7 +80,7 @@ export async function POST(
     const newMedia = await prisma.media.create({
       data: {
         name: file.name,
-        type: file.type.startsWith('audio/') ? 'audio' : file.type.startsWith('video/') ? 'video' : 'document',
+        type: file.type,
         url: publicUrl,
         processing: true,
         note: {
@@ -96,6 +99,14 @@ export async function POST(
       include: {
         media: true,
       },
+    });
+
+    // automatically generates transcript and summary server side if necessary
+    fetch(`${process.env.NEXTAUTH_URL}/api/getTranscript`, {
+      method: "POST",
+      body: JSON.stringify({
+        mediaId: newMedia.id,
+      }),
     });
 
     return NextResponse.json({...updatedNote, newMedia });

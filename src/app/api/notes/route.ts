@@ -40,6 +40,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
+    const defaultFolder = await prisma.folder.findFirst({
+      where: {
+        userId: session.user.id,
+        isDefault: true,
+      },
+    });
+
     const note = await prisma.note.create({
       data: {
         title,
@@ -53,7 +60,11 @@ export async function POST(req: Request) {
           connect: {
             id: folderId,
           },
-        } : undefined,
+        } : {
+          connect: {
+            id: defaultFolder?.id || "",
+          },
+        },
       },
     });
 
