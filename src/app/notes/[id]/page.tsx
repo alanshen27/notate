@@ -27,6 +27,7 @@ import { v4 } from "uuid";
 import { useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { pusher } from "@/lib/client/pusher";
+import { Loading } from "@/components/ui/loading";
 
 interface MediaFile {
   id: string;
@@ -541,7 +542,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-full">Loading...</div>;
+    return <Loading text="Loading notes..." />
   }
 
   if (!note) {

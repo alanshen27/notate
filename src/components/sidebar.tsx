@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useSession } from "next-auth/react";
+import { Loading } from "./ui/loading";
 
 interface Note {
   id: string;
@@ -420,7 +421,7 @@ export function Sidebar() {
 
 
   if (isLoading && !session) {
-    return <div className="w-64 border-r p-4">Loading...</div>;
+    return <Loading text="Loading folders..." />
   }
 
 
@@ -454,6 +455,14 @@ export function Sidebar() {
         </div>
         <ScrollArea className="">
           <div className="space-y-2">
+            {
+              isLoading ? (
+                <Loading text="Loading folders..." className="w-[15rem]" />
+              ) : (
+                <>
+                </>  
+              )
+            }
             {folders?.children && folders.children.map(folder => (
               <FolderItem
                 key={folder.id}

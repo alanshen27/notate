@@ -5,6 +5,8 @@ import { Providers } from "@/components/providers";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Navbar } from "@/components/Navbar";
+import { Toaster } from "@/components/ui/sonner"
+
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,6 +33,7 @@ export default async function RootLayout({
               {children}
             </main>
           </div>
+          <Toaster />
         </Providers>
       </body>
     </html>
