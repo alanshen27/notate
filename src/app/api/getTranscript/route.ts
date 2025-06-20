@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    pusher.trigger(`note_${media.noteId}`, 'transcript_ready', updatedMedia);
+    pusher.trigger(`note_${media.noteId}`, 'transcript_ready', updatedMedia.id);
 
     return NextResponse.json({ 
       transcript: text, 

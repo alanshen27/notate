@@ -92,3 +92,28 @@ export async function DELETE(
     return new NextResponse("Internal Error", { status: 500 });
   }
 } 
+
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string; mediaId: string }> }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    return new NextResponse("Unauthorized", { status: 401 });
+  }
+
+  const media = await prisma.media.findUnique({
+    where: {
+      id: (await params).mediaId,
+      note: {
+        userId: session.user.id,
+      }
+    },
+  });
+
+  if (!media) {
+    return new NextResponse("Media not found", { status: 404 });
+  }
+
+  return NextResponse.json(media);
+}

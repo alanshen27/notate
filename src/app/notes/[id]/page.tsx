@@ -74,14 +74,38 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
 
   useEffect(() => {
     const channel = pusher.subscribe(`note_${id}`);
-    channel.bind('transcript_ready', (data: MediaFile) => {
+    channel.bind('transcript_ready', async(mediaId: string) => {
+      const media = await fetch(`/api/notes/${id}/media/${mediaId}`);
+      const mediaData = await media.json();
+
       setNote((prevNote) => ({
         ...prevNote!,
         media: prevNote!.media.map((m) =>
-          m.id === data.id ? data : m
+          m.id === mediaData.id ? mediaData : m
         ),
       }));
     });
+
+    channel.bind('summary_ready', async () => {
+      const summary = await fetch(`/api/notes/${id}/summary`);
+      const summaryData = await summary.json();
+
+      setNote((prevNote) => ({
+        ...prevNote!,
+        content: summaryData,
+      }));
+
+      setIsAddingToSummary(false);
+
+      setSelectedMediaIds([]);
+      setChangedContent(prev => prev + 1)
+    });
+
+    return () => {
+      channel.unbind_all();
+      pusher.unsubscribe(`note_${id}`);
+    }
+
   }, [id]);
 
   useEffect(() => {
@@ -225,32 +249,6 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
         ]
       });
 
-      // if (note?.media.find(media => media.id === newMedia.id)) 
-      // setNote({
-      //   ...note!,
-      //   media: note!.media.map(media => 
-      //     media.id === newMedia.id 
-      //       ? { 
-      //           ...media, 
-      //           transcript: transcriptData.transcript || '', 
-      //           summary: transcriptData.summary || '',
-      //           processing: false 
-      //         } 
-      //       : media
-      //   ),
-      // })
-      // else setNote({
-      //   ...note!,
-      //   media: [
-      //     ...note!.media,
-      //     {
-      //       ...newMedia,
-      //       transcript: transcriptData.transcript || '',
-      //       summary: transcriptData.summary || '',
-      //       processing: false,
-      //     }
-      //   ]
-      // })
       toast.success("File uploaded successfully");
     } catch (error) {
       console.error("Error uploading file:", error);
@@ -438,34 +436,17 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
     }
 
     setIsAddingToSummary(true);
-    try {
-      const response = await fetch(`/api/notes/${id}/summary`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          mediaIds: selectedMediaIds,
-        }),
-      });
 
-      if (!response.ok) throw new Error("Failed to add to summary");
-      
-      const updatedNote = await response.json();
-      
-      setNote({
-        ...note!,
-        content: updatedNote.summary,
-      });
-      setSelectedMediaIds([]);
-      setChangedContent(prev => prev + 1);
-      toast.success("Added to summary successfully");
-    } catch (error) {
-      console.error("Error adding to summary:", error);
-      toast.error("Failed to add to summary");
-    } finally {
-      setIsAddingToSummary(false);
-    }
+    fetch(`/api/notes/${id}/summary`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        mediaIds: selectedMediaIds,
+      }),
+    });
+    
   };
 
   const handleSendMessage = async () => {
