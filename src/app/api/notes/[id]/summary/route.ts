@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { marked } from 'marked';
 import OpenAI from 'openai';
 import pusher from '@/lib/pusher';
 
@@ -95,26 +96,32 @@ export async function POST(
       messages: [
         {
           role: "system",
-          content: "You are a helpful assistant that converts multiple media sources and rough notes into a single student-style cram sheet. You organize, summarize, and format the material clearly, with high information density and logical flow."
+          content: `You are an expert AI notetaker trained to convert media and student notes into a clear, compressed study guide in **Markdown**. Your style mimics TurboLearn: structured, high-density, and easy to revise from.`
         },
         {
           role: "system",
-          content: "Return output in clean, semantically structured HTML using <h1>, <h2>, <ul>, <li>, <code>, and <p>. Use bullet points for facts and definitions. Include equations, statistics, and examples wherever they appear. If content includes slides, summarize each slide clearly."
+          content: `Output only valid Markdown. Use **#**, **##**, **-**, **1.**, and backticks for code or pinyin. No HTML tags. Do NOT mix HTML with Markdown. No explanations, no extra metadata — just the notes.`
         },
         {
           role: "system",
-          content: "Focus on student needs: concepts, formulas, key examples, diagrams (describe in text), and all numerical/statistical data. Make it comprehensive and efficient to revise from. Do not omit any useful content. Do not include metadata or framing text."
+          content: `Merge all provided content (transcripts, slides, media) with student notes. Only reorganize or rephrase when it improves clarity. Keep all helpful examples, grammar, vocabulary, and lists.`
+        },
+        {
+          role: "system",
+          content: `Format clearly with headers for sections (e.g. # Speaking, ## Adjectives, etc). Use bold for key words and pinyin in backticks. Preserve lists and chains. Keep everything student-friendly.`
         },
         {
           role: "user",
-          content: `Please create a comprehensive cram sheet from the following media and notes:\n\n${mediaContent}\n\nStudent's notes:\n${note.content} Try to concatenate to the users notes, and only change if it would make it more helpful.`
-        }    
+          content: `Generate a full Markdown cram sheet from:\n\nMedia:\n${mediaContent}\n\nStudent Notes:\n${note.content}`
+        }
       ],
-      temperature: 0.7,
-      max_tokens: 1000,
+      temperature: 0.4,
     });
+    
+    
+    console.log(`Generate a full Markdown cram sheet from:\n\nMedia:\n${mediaContent}\n\nStudent Notes:\n${note.content}`)
 
-    const newSummary = completion.choices[0].message.content;
+      const newSummary = await marked.parse(completion.choices[0].message.content || "");
 
     // Update the note with the new AI-generated summary
     await prisma.note.update({
@@ -122,7 +129,7 @@ export async function POST(
         id,
       },
       data: {
-        content: newSummary! || note.content,
+        content: newSummary,
       },
       include: {
         media: true,

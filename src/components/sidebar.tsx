@@ -77,7 +77,7 @@ function NoteItem({ note, level, isSelected, onSelect, onDelete, onRename }: Not
           style={{ marginLeft: `${level * 1.5 + 0.5}rem` }}
         >
           <FileText className="h-4 w-4" />
-          <span className="truncate">{note.title || "Untitled"}</span>
+          <span className="max-w-[9rem] overflow-hidden text-ellipsis whitespace-nowrap">{note.title || "Untitled"}</span>
         </button>
         <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
           <DropdownMenuTrigger asChild>
@@ -190,7 +190,7 @@ function FolderItem({ folder, level, isSelected, onSelect, onDelete, onRename, o
               )}
             />
             <Folder className="h-4 w-4" />
-            <span className="text-sm font-medium">{folder.name}</span>
+            <span className="text-sm font-medium max-w-[9rem] overflow-hidden text-ellipsis whitespace-nowrap">{folder.name}</span>
           </CollapsibleTrigger>
           <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
             <DropdownMenuTrigger asChild>
@@ -293,7 +293,15 @@ export function Sidebar() {
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [showNewNoteModal, setShowNewNoteModal] = useState(false);
 
+  const [sidebarWidth, setSidebarWidth] = useState(17); // units: em
+
   useEffect(() => {
+    const savedWidth = localStorage.getItem("sidebarWidth");
+    if (savedWidth) {
+      setSidebarWidth(parseInt(savedWidth));
+    } else {
+      setSidebarWidth(17);
+    }
     fetchFolders();
   }, []);
 
@@ -430,7 +438,7 @@ export function Sidebar() {
   }
 
   return (
-    <div className="border-r bg-background h-full">
+    <div className="border-r bg-background h-full" style={{ width: `${sidebarWidth}em` }}>
       <div className="p-4 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Notes</h2>

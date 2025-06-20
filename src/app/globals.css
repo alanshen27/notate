@@ -122,9 +122,6 @@
 }
 
 .typography-enabled {
-  p {
-    @apply mb-4;
-  }
   h1 {
     @apply text-2xl font-bold mb-4;
   }
@@ -132,6 +129,9 @@
     @apply text-xl font-bold mb-4;
   }
 
+  p {
+    @apply mb-4;
+  }
   a {
       @apply text-blue-600 hover:underline cursor-pointer; 
   }
@@ -143,7 +143,24 @@
     @apply list-decimal list-inside mb-4;
   }
 
-  
+  /* Fix for TipTap list structure (li > p) */
+  ul li p,
+  ol li p {
+    display: inline;
+    margin: 0;
+  }
+
+  /* Ensure proper spacing between list items */
+  ul li,
+  ol li {
+    margin-bottom: 0.25rem;
+  }
+
+  /* Remove margin from last list item */
+  ul li:last-child,
+  ol li:last-child {
+    margin-bottom: 0;
+  }
 
 }
 

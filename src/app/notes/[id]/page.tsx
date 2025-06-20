@@ -18,7 +18,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { Plus, Upload, Mic, Video, MoreVertical, Trash2, MessageSquare, X, Loader2, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Upload, Mic, Video, MoreVertical, Trash2, MessageSquare, Loader2, ExternalLink, ChevronLeft, ChevronRight, FileText, Image, FileIcon } from "lucide-react";
 import { Section } from "@/lib/types";
 import { toast } from "sonner";
 import debounce from "lodash/debounce";
@@ -28,6 +28,7 @@ import { useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { pusher } from "@/lib/client/pusher";
 import { Loading } from "@/components/ui/loading";
+import { Chat } from "@/components/chat";
 
 interface MediaFile {
   id: string;
@@ -64,9 +65,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
   const [recording, setRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [messages, setMessages] = useState<{ role: string; content: string; user?: { image: string; name: string } }[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
   const [isAiResponding, setIsAiResponding] = useState(false);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [changedContent, setChangedContent] = useState<number>(0);
   const [isGeneratingFlashcards, setIsGeneratingFlashcards] = useState(false);
   const [flashcards, setFlashcards] = useState<{ term: string; definition: string }[]>([]);
@@ -125,16 +124,6 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
       fetchMessages();
     }
   }, [showChat]);
-
-  const scrollToBottom = () => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-    }
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
   const fetchNote = async () => {
     try {
@@ -450,12 +439,11 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
     
   };
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = async (inputMessage: string) => {
     if (!inputMessage.trim()) return;
 
     const newMessage = { role: 'user', content: inputMessage };
     setMessages(prev => [...prev, newMessage]);
-    setInputMessage('');
     setIsAiResponding(true);
 
     try {
@@ -674,15 +662,32 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                       </DropdownMenu>
                     </div>
                     <div className="aspect-video bg-muted rounded-md mb-2 flex items-center justify-center">
-                      {file.type === 'audio' ? (
-                        <Mic className="h-6 w-6 text-muted-foreground" />
-                      ) : (
-                        <Video className="h-6 w-6 text-muted-foreground" />
-                      )}
+                      {(() => {
+                        const fileType = file.type.split('/')[0];
+                        const fileExtension = file.name.split('.').pop()?.toLowerCase();
+                        
+                        switch (fileType) {
+                          case 'audio':
+                            return <Mic className="h-6 w-6 text-muted-foreground" />;
+                          case 'video':
+                            return <Video className="h-6 w-6 text-muted-foreground" />;
+                          case 'image':
+                            return <Image className="h-6 w-6 text-muted-foreground" />;
+                          case 'text':
+                            return <FileText className="h-6 w-6 text-muted-foreground" />;
+                          case 'application':
+                            if (file.type.includes('pdf') || fileExtension === 'doc' || fileExtension === 'docx') {
+                              return <FileIcon className="h-6 w-6 text-muted-foreground" />;
+                            }
+                            return <FileIcon className="h-6 w-6 text-muted-foreground" />;
+                          default:
+                            return <FileIcon className="h-6 w-6 text-muted-foreground" />;
+                        }
+                      })()}
                     </div>
                     <p className="text-sm font-medium truncate">{file.name}</p>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      {file.type === 'audio' ? 'Audio' : 'Video'}
+                    <p className="text-xs text-muted-foreground mb-2 w-35 truncate">
+                      {file.type.slice(0, 1).toUpperCase() + file.type.slice(1)}
                     </p>
                     <Button
                       variant="outline"
@@ -790,92 +795,12 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
             )}
             {/* Chat */}
             {showChat && (
-              <div className="flex flex-col border rounded-md bg-white p-4">
-                <div className="relative">
-                <div className="flex items-center justify-between mb-4 sticky top-0 left-0 right-0">
-                  <h3 className="font-semibold">Chat</h3>
-                  <Button variant="ghost" size="sm" onClick={() => setShowChat(false)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-                </div>
-                <div className="flex flex-col justify-between">
-                  <div ref={messagesContainerRef} className="overflow-y-auto space-y-4 h-[35rem]">
-                    {messages.map((message, index) => (
-                      <div
-                        key={index}
-                        className={cn(
-                          "flex items-start gap-2",
-                          message.role === 'user' ? "justify-end" : "justify-start"
-                        )}
-                      >
-                        {message.role === 'assistant' && (
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                            <span className="text-xs font-medium">AI</span>
-                          </div>
-                        )}
-                        <div
-                          className={cn(
-                            "rounded-lg p-3 max-w-[80%]",
-                            message.role === 'user'
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted"
-                          )}
-                        >
-                          <p className="text-sm">{message.content}</p>
-                        </div>
-                        {message.role === 'user' && (
-                          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center overflow-hidden">
-                            {message.user?.image ? (
-                              <img 
-                                src={message.user.image} 
-                                alt={message.user.name || 'User'} 
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <span className="text-xs font-medium text-primary-foreground">You</span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    {isAiResponding && (
-                      <div className="flex items-start gap-2">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-xs font-medium">AI</span>
-                        </div>
-                        <div className="rounded-lg p-3 bg-muted">
-                          <div className="flex gap-1">
-                            <div className="w-2 h-2 rounded-full bg-primary/50 animate-bounce" />
-                            <div className="w-2 h-2 rounded-full bg-primary/50 animate-bounce [animation-delay:0.2s]" />
-                            <div className="w-2 h-2 rounded-full bg-primary/50 animate-bounce [animation-delay:0.4s]" />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex gap-2 mt-4">
-                    <Input 
-                      placeholder="Type your message..." 
-                      className="flex-1"
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                    />
-                    <Button 
-                      onClick={handleSendMessage}
-                      disabled={!inputMessage.trim() || isAiResponding}
-                    >
-                      Send
-                    </Button>
-                  </div>
-                </div>
-              </div>
+              <Chat
+                onClose={() => setShowChat(false)}
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                isAiResponding={isAiResponding}
+              />
             )}
           </div>
         </div>
