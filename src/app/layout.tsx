@@ -13,7 +13,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "notate.sh",
   description: "Your personal AI-powered note-taking and revision app",
-  icons: "/logo.png",
+  icons: "/logo-ico.png",
 };
 
 export default async function RootLayout({
