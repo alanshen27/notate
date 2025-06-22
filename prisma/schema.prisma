@@ -55,7 +55,7 @@ model User {
   files                 File[]
   folders               Folder[]
   notes                 Note[]
-  tokens                Int       @default(1000)
+  tokens                Int       @default(80000)
   messages              Message[]
 }
 
