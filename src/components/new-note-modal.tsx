@@ -12,7 +12,7 @@ import { toast } from "sonner";
 interface NewNoteModalProps {
   open: boolean;
   onClose: () => void;
-  onNoteCreated: (title: string) => void;
+  onNoteCreated: (title: string) => Promise<void>;
 }
 
 export function NewNoteModal({
@@ -31,7 +31,7 @@ export function NewNoteModal({
     setIsLoading(true);
 
     try {
-      onNoteCreated(title);
+      await onNoteCreated(title);
     } catch (error) {
       console.error("Error creating note:", error);
       toast.error("Failed to create note");

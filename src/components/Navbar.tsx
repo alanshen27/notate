@@ -153,10 +153,10 @@ export function Navbar() {
             {status === 'authenticated' ? (
               <>
                 <Link
-                  href="/notes/new"
+                  href="/notes"
                   className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
                 >
-                  New Note
+                  My Notes
                 </Link>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
