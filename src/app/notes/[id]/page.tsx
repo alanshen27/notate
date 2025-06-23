@@ -71,42 +71,46 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
   const [flashcards, setFlashcards] = useState<{ term: string; definition: string }[]>([]);
   const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
   const [activeTab, setActiveTab] = useState("media");
-
+  
   useEffect(() => {
-    const channel = pusher.subscribe(`note_${id}`);
-    channel.bind('transcript_ready', async(mediaId: string) => {
-      const media = await fetch(`/api/notes/${id}/media/${mediaId}`);
-      const mediaData = await media.json();
-
-      setNote((prevNote) => ({
-        ...prevNote!,
-        media: prevNote!.media.map((m) =>
-          m.id === mediaData.id ? mediaData : m
-        ),
-      }));
-    });
-
-    channel.bind('summary_ready', async () => {
-      const summary = await fetch(`/api/notes/${id}/summary`);
-      const summaryData = await summary.json();
-
-      setNote((prevNote) => ({
-        ...prevNote!,
-        content: summaryData,
-      }));
-
-      setIsAddingToSummary(false);
-
-      setSelectedMediaIds([]);
-      setChangedContent(prev => prev + 1)
-    });
-
+    const subscribe = async () => {
+      const channel = await pusher.subscribe(`note_${id}`);
+  
+      channel.bind('transcript_ready', async (mediaId: string) => {
+        const media = await fetch(`/api/notes/${id}/media/${mediaId}`);
+        const mediaData = await media.json();
+  
+        setNote((prevNote) => ({
+          ...prevNote!,
+          media: prevNote!.media.map((m) =>
+            m.id === mediaData.id ? mediaData : m
+          ),
+        }));
+      });
+  
+      channel.bind('summary_ready', async () => {
+        const summary = await fetch(`/api/notes/${id}/summary`);
+        const summaryData = await summary.json();
+  
+        setNote((prevNote) => ({
+          ...prevNote!,
+          content: summaryData,
+        }));
+  
+        setIsAddingToSummary(false);
+        setSelectedMediaIds([]);
+        setChangedContent((prev) => prev + 1);
+      });
+    };
+  
+    subscribe();
+  
     return () => {
-      channel.unbind_all();
       pusher.unsubscribe(`note_${id}`);
-    }
-
+      pusher.unbind_all();
+    };
   }, [id]);
+  
 
   useEffect(() => {
     fetchNote();

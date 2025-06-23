@@ -119,7 +119,6 @@ export async function POST(
     });
     
     
-    console.log(`Generate a full Markdown cram sheet from:\n\nMedia:\n${mediaContent}\n\nStudent Notes:\n${note.content}`)
 
       const newSummary = await marked.parse(completion.choices[0].message.content || "");
 
@@ -136,7 +135,7 @@ export async function POST(
       },
     });
 
-    pusher.trigger(`note_${id}`, 'summary_ready', id);
+    await pusher.trigger(`note_${id}`, 'summary_ready', id);
 
     return NextResponse.json({
       summary: newSummary,
